@@ -2,6 +2,7 @@ import os
 import shutil
 import requests
 from lxml import etree
+import time
 
  
 class MZiTu:
@@ -13,27 +14,62 @@ class MZiTu:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36",
             "Referer": "https://www.mzitu.com/"
         }
-        self.path = input('请输入保存的文件夹名(默认为--meizitu--):')
- 
+        self.path = "meizitu"
+
+
+        self.urls_finish = []
+        self.urls_downloads = []
+
+        self.file = open('finished.txt','a+')
+        self.file.seek(0, 0)
+        lines = self.file.readlines()
+        for line in lines:
+            self.urls_finish.append(line.strip())
+
+        self.urls_downloads.append(self.index_url)
+        
+
     # 发送request请求
     def send_request(self, url):
-        return requests.get(url, headers=self.headers, timeout=3).content
+        counter = 0
+        while True:
+            response = requests.get(url, headers=self.headers, allow_redirects=False)
+            if response.status_code == 200:
+                return response.content
+            
+            counter = counter + 1
+            if counter > 1000:
+                print("*" * 10, 'request too many fail!!', "*" * 10)
+                return None
+
+            time.sleep(0.1)
  
+
+    def add_url(self, url):
+        if url in self.urls_finish:
+            return
+        if url in self.urls_downloads:
+            return
+        self.urls_downloads.append(url)
+
     # 解析每页的数据
     def parse(self, html_str):
         html = etree.HTML(html_str)
+
+        # 写真集
         titles = html.xpath('//img[@class="lazy"]')
-        content_list = []
         for title in titles:
-            item = {}
-            item['title'] = title.xpath('./@alt')[0]
-            item['href'] = title.xpath('../@href')[0]
-            content_list.append(item)
-            # print(item)
-        # print(content_list)
-        next_url = html.xpath('//a[contains(text(),"下一页")]/@href')
-        next_url = next_url[0] if next_url else None
-        return content_list, next_url
+            href = title.xpath('../@href')[0]
+            self.add_url(href)
+        
+        # 下一页
+        next_page_url = html.xpath('//a[@class="next page-numbers"]/@href')
+        for url in next_page_url:
+            self.add_url(url)
+
+        # 是否写真集首页
+        title = html.xpath('//h2[@class="main-title"]')
+        return title[0].text if title else None
  
     # 获取每张写真集的img_url
     def get_img_url(self, detail_html):
@@ -45,85 +81,93 @@ class MZiTu:
         next_url = next_img_url[0] if next_img_url else None
         return img_url, next_url
  
-    # 判断文件夹是否存在,不存在创建文件夹
-    def mkdir(self, dir_name, img_url_list):
+    # 保存img
+    def save_image(self, title, img_url_list):
+        
         total_image = len(img_url_list)
-        meizi_dir = self.path if self.path else 'meizitu'
-        final_dir = meizi_dir + '/' + '[{}P]'.format(str(total_image)) + dir_name
+        final_dir = self.path + '/' + '[{}P]'.format(str(total_image)) + title
+
         if os.path.exists(final_dir):
             shutil.rmtree(final_dir)
         os.makedirs(final_dir)
-        return final_dir
- 
-    # 保存img
-    def save_image(self, j, final_dir, img_url_list):
+
         for img_url in img_url_list:
-            try:
-                image_data = self.send_request(img_url)
-            except:
+            image_data = self.send_request(img_url)
+            if image_data == None:
                 continue
+
             file_name = final_dir + '/' + img_url[-9:]
-            with open(file_name, 'wb') as image:
-                image.write(image_data)
-            print("*" * 14, img_url, '下载完成', "*" * 14)
-        print("-" * 29 + '第{}张写真集保存完毕'.format(int(j)) + "-" * 30 + '\n\n')
- 
-    # 运行爬虫
-    def run(self):
-        # 1. 获取url
-        next_page_url = self.index_url
-        i = 1
-        # 获取每页的url地址并解析
-        while True:
-            # 2. 发送请求,获取响应
             try:
-                html_str = self.send_request(next_page_url).decode()
+                f = open(file_name, 'wb+')
+                f.write(image_data)
+                f.close()
             except:
+                print("*" * 10, 'io error', "*" * 10)
                 continue
-            # 3. 解析数据
-            content_list, next_page_url = self.parse(html_str)
-            # 4. 获取详情页的img
-            j = 1
-            # 获取每张写真集并解析
-            for content in content_list:
-                img_url_list = []
-                print("-" * 30 + '正在获取第{}张写真集'.format(int(j)) + "-" * 30)
-                # 获取每张写真集的img_url
-                # 第一页的img地址
-                dir_name = content['title']
-                next_url = content['href']
-                # print(next_url)
-                # 获取每张写真集每页的img_url
-                while True:
-                    try:
-                        detail_html = self.send_request(next_url).decode()
-                    except:
-                        continue
-                    img_url, next_url2 = self.get_img_url(detail_html)
-                    if img_url != None:
-                        next_url = next_url2
-                        img_url_list.append(img_url)
-                    if next_url is None:
-                        break
-                    
-                    #time.sleep(1)
-                # 保存图片
-                if img_url_list:
-                    final_dir = self.mkdir(dir_name, img_url_list)
-                    self.save_image(j, final_dir, img_url_list)
-                j += 1
-            print("-" * 32 + '第{}页获取完成'.format(int(i)) + "-" * 32 + '\n\n')
-            i += 1
-            if next_page_url is None:
-                break
             
-            #time.sleep(1)
+            print("*" * 10, img_url, 'finish', "*" * 10)
+ 
+ 
+    def run(self):
+
+        while True:
+
+            if len(self.urls_downloads) > 0:
+                url = self.urls_downloads.pop(0)
+                print("-" * 10 + "parse url : {}".format(url) + "-" * 10)
+
+                if url in self.urls_finish:
+                    print("-" * 10 + "already finished" + "-" * 10)
+                    continue
+
+                while True:
+                    content = self.send_request(url)
+                    if content == None:
+                        break
+                    html_str = content.decode()
+
+                    # 搜索新的写真集
+                    title = self.parse(html_str)
+
+                    # 获取写真集详情
+                    img_url_list = []
+                    if title != None:
+                        next_url = url
+
+                        while True:    
+                            content = self.send_request(next_url)
+                            if content == None:
+                                break
+                            detail_html = content.decode()
+
+                            img_url, next_url2 = self.get_img_url(detail_html)
+                            if img_url != None:
+                                next_url = next_url2
+                                img_url_list.append(img_url)
+                            if next_url is None:
+                                break
+
+                    print("-" * 10 + "images count: {}".format(len(img_url_list)) + "-" * 10)
+                
+                    # 保存图片
+                    if img_url_list:
+                        
+                        self.save_image(title, img_url_list)
+                    
+                        # 保存结果
+                        self.urls_finish.append(url)
+                        self.file.write(url+'\n')
+                        self.file.flush()
+
+                    break
+
+                # 结束
+                print('\n\n')
  
  
 def main():
     mz = MZiTu()
     mz.run()
- 
- 
+
 if __name__ == '__main__':
     main()
