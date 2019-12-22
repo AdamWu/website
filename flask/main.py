@@ -42,4 +42,4 @@ def upload():
     return render_template('upload.html')
 
 if __name__ == '__main__':
-   app.run(host='172.17.0.15', port=1206, debug=True)
+   app.run(host='172.17.0.15', port=8080, debug=True)

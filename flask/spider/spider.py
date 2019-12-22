@@ -114,7 +114,7 @@ class MZiTu:
 
             if len(self.urls_downloads) > 0:
                 url = self.urls_downloads.pop(0)
-                print("-" * 10 + "parse url : {}".format(url) + "-" * 10)
+                print("-" * 10 + "parse url: {} (left:{})".format(url,len(self.urls_downloads)) + "-" * 10)
 
                 if url in self.urls_finish:
                     print("-" * 10 + "already finished" + "-" * 10)

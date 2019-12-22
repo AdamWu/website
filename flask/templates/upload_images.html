@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>h5拖拽异步上传</title>
+</head>
+<style>
+	#uuz{
+		height: 200px;
+		border: 1px dashed orange;
+		text-align: center;
+	}
+	#download_container {
+    display: flex;
+    justify-content: center;
+}
+#download {
+    width:50%;
+    height:40px;
+    margin:0 auto;
+    margin-top:10px;
+    cursor: pointer;
+    border: 0px;
+    border-radius: 10px;
+    background: rgb(240, 240, 240);
+}
+</style>
+<body>
+	<div id="uuz">
+	</div>
+	
+    <div id="download_container">
+        <a id="download_a" hidden=""></a>
+        <button id="download" disabled="" onclick="document.getElementById(&#39;download_a&#39;).click()">Nothing to download yet...</button>
+    </div>
+</body>
+<script>
+	window.onload = function(){
+		var uuz = document.getElementById('uuz');
+ 
+		uuz.ondragenter = function(e){
+			e.preventDefault();
+		}
+ 
+		uuz.ondragover = function(e){
+			e.preventDefault();
+			this.innerHTML = '请松开';
+		}
+ 
+		uuz.ondragleave = function(e){
+			e.preventDefault();
+			this.innerHTML = '请拖入要上传的文件';
+		}
+ 
+		uuz.ondrop = function(e){
+			e.preventDefault();
+ 
+			var file = e.dataTransfer.files[0]; //获取要上传的文件对象(可以上传多个)
+			
+			var reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = function () {
+				//this.result为当前文件的base64解码
+				var img = document.createElement("img");
+				img.src = this.result;
+				img.className = "myImg";
+				document.getElementById("imgs").appendChild(img);
+			};
+			reader.onloadend = function () {
+				//如果上传出错
+				if (reader.error) {
+					alert(reader.error);
+				} else {
+					//可以进行与服务器的上传交互
+				}
+			}
+				
+			var formdata = new FormData();
+			var xhr = new XMLHttpRequest();
+ 
+			formdata.append('upfile', upfile); //设置服务器端接收的name为upfile
+			xhr.open('post','1.php'); //以post方式发送到1.php
+ 
+			xhr.onreadystatechange = function(){
+				if(this.status==200){ //上传成功
+					alert('上传成功');
+				}else{
+					alert('上传失败~');
+				}
+			}
+ 
+			xhr.send(formdata);
+		}
+	}
+</script>
+</html>
