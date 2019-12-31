@@ -1,3 +1,3 @@
 # website
-a website source code using bootstap
+a website source code using bootstrap
 

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试</title>
+	<link rel="stylesheet" href="{{url_for('static', filename='swiper-5.2.1/css/swiper.min.css')}}">
+	<script type="text/javascript" src="{{url_for('static', filename='swiper-5.2.1/js/swiper.min.js')}}"></script>
+	<script type="text/javascript" src="{{url_for('static', filename='js/jquery-1.11.3.min.js')}}"></script>
+    <style>
+	
+		html, body {
+		  height: 100%;
+		}
+	
+        * {margin: 0;padding:0;}
+		a {text-decoration:none; color:#333}
+		
+        .img-content ul{width:auto; margin:20px; padding:0}
+        .img-content ul li{width:300px;height:440px;display:inline-block; margin:3px; border:1px solid #eee;}
+        .img-content ul li div{height:400px}
+        .img-content ul li img{width:100%;height:100%;object-fit: cover;}
+		
+        .img-content ul li h3{font-size:14px;width:280px;font-weight:normal;line-height:32px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;padding:0 10px}
+    
+		.pagebar {text-align: center;padding:20px 0;}
+		.pagebar a {line-height:28px; padding:0px 10px;border: 1px solid #ebebeb;display: inline-block; min-width: 30px;min-height:30px;}
+		
+		.img-shower-bg{width:100%;height:100%;left:0px;top:0px;position:fixed;background:rgba(0,0,0,0.8);z-index:999;text-align: center;display:none;}
+		.img-shower{width:100%;height:100%;object-fit: contain;}
+		.img-shower-close{width:60px;height:30px;position:absolute;top:20px;right:60px;color:#EEE;font-size:20px;background: orange; z-index:999;}
+		
+		.swiper-container {
+		  width: 100%;
+		  height: 100%;
+		}
+		.swiper-slide {
+		  text-align: center;
+		  font-size: 18px;
+		  
+		  height: 100%;
+
+		  /* Center slide text vertically */
+		  display: -webkit-box;
+		  display: -ms-flexbox;
+		  display: -webkit-flex;
+		  display: flex;
+		  -webkit-box-pack: center;
+		  -ms-flex-pack: center;
+		  -webkit-justify-content: center;
+		  justify-content: center;
+		  -webkit-box-align: center;
+		  -ms-flex-align: center;
+		  -webkit-align-items: center;
+		  align-items: center;
+		}
+    </style>
+</head>
+<body>
+    <div class="img-content">
+        <ul>
+            {% for group in groups %}
+            <li><div class="img" id="{{group.id}}"><img src="{{group.imgs[0]}}" /><h3>{{group.title}}</h3><div></li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+	<!-- 全屏放大 -->
+	<div class="img-shower-bg">
+		<!-- Swiper -->
+		<div class="swiper-container">
+			<div class="swiper-wrapper">
+			
+			</div>
+		</div>
+		<a id="showClose" class="img-shower-close" href="javascript:void(0);" onclick="showerClose()">关闭</a>
+	</div>
+	
+    <div class="pagebar">
+        {% if page > 0 %}
+        <a href="{{ url_for("get_page", page=page-1)}}">上一页</a>
+        {% endif %}
+
+        {% if page < page_max %}
+        <a href="{{ url_for("get_page", page=page+1)}}">下一页</a>
+        {% endif %}
+    </div>
+	
+<script type="text/javascript" >
+	$(".img").click(function() {
+		var id = $(this).attr("id");
+
+		$.get("/group", data={'id':id}, function(data, status){
+         	
+			console.log(data['title']);
+
+			$(".swiper-slide").each(function(){
+				$(this).remove();
+			});
+
+			for(var i in data['imgs']){
+				var img = data['imgs'][i];
+				$(".swiper-wrapper").append('<div class="swiper-slide"><img class="img-shower" src="'+img+'" /></div>');
+			}
+
+			$(".img-shower-bg").show();
+
+			var swiper = new Swiper('.swiper-container');
+
+		});
+
+	});
+	
+	function showerClose() {
+		$(".img-shower-bg").hide();
+	}
+</script>
+</body>
+</html>

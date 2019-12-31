@@ -1,9 +1,13 @@
-import os
+import os,sys
 import shutil
 import requests
 from lxml import etree
 import time
+from fake_useragent import UserAgent 
 
+print (sys.argv[0])
+
+print(UserAgent().random)
  
 class MZiTu:
  
@@ -15,7 +19,6 @@ class MZiTu:
             "Referer": "https://www.mzitu.com/"
         }
         self.path = "meizitu"
-
 
         self.urls_finish = []
         self.urls_downloads = []
@@ -33,12 +36,13 @@ class MZiTu:
     def send_request(self, url):
         counter = 0
         while True:
-            response = requests.get(url, headers=self.headers, allow_redirects=False)
+            self.headers["User-Agent"] = UserAgent().random
+            response = requests.get(url, headers=self.headers)
             if response.status_code == 200:
                 return response.content
             
             counter = counter + 1
-            if counter > 1000:
+            if counter > 100:
                 print("*" * 10, 'request too many fail!!', "*" * 10)
                 return None
 
