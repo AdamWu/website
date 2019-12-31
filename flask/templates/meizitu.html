@@ -6,6 +6,7 @@
 	<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
     <style>
         * {margin: 0;padding:0;}
+		a {text-decoration:none; color:#333}
 		
         .img-content ul{width:auto; margin:20px; padding:0}
         .img-content ul li{width:300px;height:440px;display:inline-block; margin:3px; border:1px solid #eee;}
@@ -13,15 +14,28 @@
         .img-content ul li img{width:100%;height:100%;object-fit: cover;}
 		
         .img-content ul li h3{font-size:14px;width:280px;font-weight:normal;line-height:32px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;padding:0 10px}
+    
+		.pagebar {text-align: center;padding:20px 0;}
+		.pagebar a {line-height:28px; padding:0px 10px;border: 1px solid #ebebeb;display: inline-block; min-width: 30px;min-height:30px;}
     </style>
 </head>
 <body>
     <div class="img-content">
         <ul>
-            {% for page in pages %}
-            <li><div class="img"><img src="{{page.img}}" /><h3>{{page.title}}</h3><div></li>
+            {% for group in groups %}
+            <li><div class="img"><img src="{{group.img}}" /><h3>{{group.title}}</h3><div></li>
             {% endfor %}
         </ul>
+    </div>
+    
+    <div class="pagebar">
+        {% if page > 0 %}
+        <a href="{{ url_for("get_page", page=page-1)}}">上一页</a>
+        {% endif %}
+
+        {% if page < page_max %}
+        <a href="{{ url_for("get_page", page=page+1)}}">下一页</a>
+        {% endif %}
     </div>
 <script>
 	$("img").click(function(){
